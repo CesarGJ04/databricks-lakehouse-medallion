@@ -1,0 +1,100 @@
+resources:
+  jobs:
+    Pipeline_ELT_Compras:
+      name: Pipeline ELT Compras
+      tasks:
+        - task_key: Bronze_Layer
+          notebook_task:
+            notebook_path: /Workspace/Sales Store/Bronze_pro
+            source: WORKSPACE
+        - task_key: Reglas_Calidad_Bronze
+          depends_on:
+            - task_key: Bronze_Layer
+          notebook_task:
+            notebook_path: /Workspace/Sales Store/Bronze_calidad_pro
+            source: WORKSPACE
+        - task_key: Validar_Calidad_Bronze
+          depends_on:
+            - task_key: Reglas_Calidad_Bronze
+          condition_task:
+            op: EQUAL_TO
+            left: "{{tasks.Reglas_Calidad_Bronze.values.estado}}"
+            right: Validacion Exitosa
+        - task_key: Silver_Layer
+          depends_on:
+            - task_key: Validar_Calidad_Bronze
+              outcome: "true"
+          notebook_task:
+            notebook_path: /Workspace/Sales Store/Silver_pro
+            base_parameters:
+              fecha_carga: 2025-06-16
+            source: WORKSPACE
+        - task_key: Calidad_Silver_Layer
+          depends_on:
+            - task_key: Silver_Layer
+          notebook_task:
+            notebook_path: /Workspace/Sales Store/Silver_calidad_pro
+            source: WORKSPACE
+          environment_key: Default
+        - task_key: Correo_Calidad_Bronze
+          depends_on:
+            - task_key: Validar_Calidad_Bronze
+              outcome: "false"
+          notebook_task:
+            notebook_path: /Workspace/Sales Store/Notificar Problemas Calidad
+            base_parameters:
+              lista_detalle: "{{tasks.Reglas_Calidad_Bronze.values.detalle}}"
+            source: WORKSPACE
+        - task_key: Validar_Calidad_Silver
+          depends_on:
+            - task_key: Calidad_Silver_Layer
+          condition_task:
+            op: EQUAL_TO
+            left: "{{tasks.Calidad_Silver_Layer.values.estado}}"
+            right: Validacion Exitosa
+        - task_key: Gold_Layer
+          depends_on:
+            - task_key: Validar_Calidad_Silver
+              outcome: "true"
+          notebook_task:
+            notebook_path: /Workspace/Sales Store/Gold_pro
+            source: WORKSPACE
+        - task_key: Enviar_Correo_Error
+          depends_on:
+            - task_key: Gold_Layer
+          run_if: AT_LEAST_ONE_FAILED
+          notebook_task:
+            notebook_path: /Workspace/Sales Store/Notificar Ejecucion con Errores
+            source: WORKSPACE
+        - task_key: Enviar_Correo_Success
+          depends_on:
+            - task_key: Gold_Layer
+          notebook_task:
+            notebook_path: /Workspace/Sales Store/Notificar Ejecucion Exitosa
+            base_parameters:
+              mensaje: El pipeline ELT ha terminado de manera exitosa.
+            source: WORKSPACE
+        - task_key: Correo_Calidad_Silver
+          depends_on:
+            - task_key: Validar_Calidad_Silver
+              outcome: "false"
+          notebook_task:
+            notebook_path: /Workspace/Sales Store/Notificar Problemas Calidad
+            base_parameters:
+              lista_detalle: "{{tasks.Calidad_Silver_Layer.values.detalle}}"
+            source: WORKSPACE
+          environment_key: Default
+      queue:
+        enabled: true
+      parameters:
+        - name: sent_to
+          default: cesarg29j@gmail.com
+        - name: tipo_carga
+          default: Historico
+        - name: fecha_carga
+          default: 2025-06-16
+      environments:
+        - environment_key: Default
+          spec:
+            environment_version: "4"
+      performance_target: PERFORMANCE_OPTIMIZED

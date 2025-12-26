@@ -1,0 +1,13 @@
+# Carpetas gneradas por Terrefomr
+.terraform/
+
+# Archivos de estado de Terraform
+*.tfstate
+*.tfstate.backup
+
+# Archivos binarios o empaquetados
+*.zip
+
+# Archivos de log o debug
+*.log
+
