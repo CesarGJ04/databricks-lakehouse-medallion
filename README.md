@@ -8,5 +8,4 @@ The pipeline is orchestrated using Databricks Workflows, demonstrating scalable,
 
 <img width="1536" height="1024" alt="image" src="https://github.com/user-attachments/assets/0382a9f0-c9b6-48b2-b353-3df7a1b4a3c1" />
 
-
 <img width="1268" height="608" alt="image" src="https://github.com/user-attachments/assets/7b085cc0-2f42-4290-b086-4d780d019f95" />
